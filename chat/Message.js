@@ -1,0 +1,10 @@
+Message = class {
+  constructor()
+  {
+    this.data = new Data(this);
+    this.data.add("id");
+    this.data.add("text", "");
+
+    this.visibleTo = {};
+  }
+}
