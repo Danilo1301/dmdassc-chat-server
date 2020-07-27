@@ -19,7 +19,9 @@ Server = class {
       if(packet.id == "join") {
         var uid = data.uid;
 
-        user = Chat.getUser(uid);
+        user = Chat.getUser(user => user.id == uid);
+
+
 
         if(!uid.startsWith("1:") || user == undefined) {
           uid = "1:" + makeid(20);

@@ -1,22 +1,3 @@
-class MessageSystem {
-  static run(user)
-  {
-    var channel = Chat.channels[user.channelId];
-
-
-    //console.log(channel.messages);
-
-    var data = {};
-
-    return data;
-  }
-
-  static canUserReceiveMessage(user, message)
-  {
-    return true
-  }
-}
-
 User = class {
   constructor()
   {
@@ -28,14 +9,13 @@ User = class {
     this.data.add("getBadge");
     this.data.add("send");
     this.data.add("joinChannel");
-
-    this.badge = new Badge();
-    this.events = [];
-    this.socket = null;
-
-    this.admin = false;
+    this.data.add("leaveChannel");
 
     this.messagesOnClient = [];
+    this.socket = null;
+    this.badge = new Badge();
+    this.events = [];
+    this.admin = false;
   }
 
   getBadge()
@@ -47,24 +27,18 @@ User = class {
   {
     if(this.channelId == -1) { return; }
 
-    var message = Chat.channels[this.channelId].createMessage(text);
-
-    console.log(message.data.serialize(true))
-    console.log("send", text)
+    return Chat.channels[this.channelId].createMessage(text);
   }
-
-
-
 
   onJoinChannel(channel, success, error)
   {
-    if(success) {
-      this.channelId = channel.id;
-      this.registerEvent("join_channel_success", {channelId: channel.id});
+    if(!success) {
+      this.registerEvent("join_channel_failed", {error: error});
       return
     }
 
-    this.registerEvent("join_channel_failed", {error: error});
+    this.channelId = channel.id;
+    this.registerEvent("join_channel_success", {channelId: channel.id});
   }
 
   onLeaveChannel()
@@ -78,8 +52,27 @@ User = class {
   {
     this.socket = socket;
     this.registerEvent("connect_success", this.data.serialize());
-    Chat.events.trigger("user_join", this.id);
-    //this.joinChannel(0);
+    Chat.events.trigger("user_connect", this.id);
+
+    this.socket.on("disconnect", this.onDisconnect.bind(this))
+  }
+
+  joinChannel(channelId)
+  {
+    Chat.channels[channelId].handleUserJoin(this);
+  }
+
+  leaveChannel()
+  {
+    if(this.channelId != -1)
+    {
+      Chat.channels[this.channelId].handleUserLeave(this);
+    }
+  }
+
+  onDisconnect()
+  {
+    this.leaveChannel();
   }
 
   registerEvent(id, data)
@@ -102,7 +95,7 @@ User = class {
 
     if(id == "join_channel")
     {
-      Chat.channels[data.channelId].handleUserJoin(this);
+      this.joinChannel(data.channelId);
     }
 
     if(id == "create_channel")
@@ -115,34 +108,27 @@ User = class {
       if(typeof data != "string") {
         data = "";
       }
-      
+
       if(data == "admin") {
         this.admin = true;
         return
       }
-      this.send(data);
+      if(data == "reload") {
+        Mods.reloadMods();
+        return
+      }
+      this.send(this.name + ": " + data);
     }
 
     if(id == "leave_channel")
     {
       Chat.channels[this.channelId].handleUserLeave(this);
     }
-
   }
 
   tick()
   {
     if(!this.socket) { return }
-
-    if(this.channelId != -1) {
-      MessageSystem.run(this);
-
-      //var channel = Chat.channels[this.channelId];
-      //var messages = channel.messages;
-
-      //console.log(messages)
-    }
-
 
     if(this.events.length > 0) {
       this.socket.emit("data", this.events);

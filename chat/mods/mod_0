@@ -1,0 +1,19 @@
+const API_TOKEN = "public_api_key";
+const Chat = API.load(API_TOKEN);
+
+var channel = Chat.getChannel(channel => channel.name == "Main Channel");
+
+channel.on("user_join", userId => {
+  var user = Chat.getUser(user => user.id == userId);
+  channel.sendServerMessage(JSON.stringify(user));
+});
+
+channel.on("user_leave", userId => {
+
+});
+
+Chat.on("user_connect", userId => {
+
+});
+
+channel.sendServerMessage("(mod 0)");

@@ -3,7 +3,7 @@ Message = class {
   {
     this.data = new Data(this);
     this.data.add("id");
-    this.data.add("text", "");
+    this.data.add("text", "", {set: true});
 
     this.visibleTo = {};
   }
